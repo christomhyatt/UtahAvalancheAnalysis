@@ -1,0 +1,23 @@
+<svg width="500" height="900" xmlns="http://www.w3.org/2000/svg">
+    <!-- Top section -->
+    <polygon id="top" points="100,10 120,70 80,70" style="fill:white;stroke:black;stroke-width:3"/>
+    <!-- Middle section -->
+    <polygon id="middle" points="80,70 120,70 140,140 60,140" style="fill:white;stroke:black;stroke-width:3"/>
+    <!-- Bottom section -->
+    <polygon id="bottom" points="60,140 140,140 160,200 40,200" style="fill:white;stroke:black;stroke-width:3"/>
+</svg>
+
+<!-- <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <!-- Background -->
+  <rect width="800" height="600" fill="white" />
+  
+  <!-- First mountain outline -->
+  <path d="M100 500 L300 200 L500 500 Z" fill="white" stroke="black" stroke-width="4" />
+  
+  <!-- Second mountain outline (overlapping) -->
+  <path d="M200 500 L400 150 L600 500 Z" fill="white" stroke="black" stroke-width="4" />
+  
+  <!-- Horizontal dividing lines -->
+  <line x1="219" y1="320" x2="496" y2="320" stroke="black" stroke-width="4" />
+  <line x1="149" y1="425" x2="556" y2="425" stroke="black" stroke-width="4" />
+</svg> -->
