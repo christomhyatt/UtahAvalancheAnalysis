@@ -76,75 +76,13 @@ def load_and_preprocess_data(filepath: str) -> pd.DataFrame:
 
     return df
 
-def get_elevation_distribution(df: pd.DataFrame, year: str) -> Dict[str, Dict[str, Any]]:
-    """Clean elevation data, determine elevation category and add as new column
-    Input: cleaned dataframe and selected year by user
-    Output: dictionary of elevation counts into three categories (top, middle, bottom)"""
+def determine_weak_layer(df: pd.DataFrame, year: str) -> pd.DataFrame:
+    """Create dataframe of weak layer for chart"""
 
-    elevation_data = (
-        df[df['Season'] == year]
-        .groupby('Elevation Category')
-        .size()
-        .reindex(['>9K', '>8K and <9K', '>8K'], fill_value=0))
-    
-    # Test when finished*********** .size()
-    return {
-        'top' : {'range': '>9k', 'count': elevation_data.get(">9K",0)},
-        'middle' : {'range': '>8K and <9K', 'count': elevation_data.get('>8K and <9K',0)},
-        'bottom' : {'range': '>8K', 'count': elevation_data.get('>8K',0)}
-    }
-
-def process_avalanche_outcomes(df: pd.DataFrame, year:str) -> pd.DataFrame:
-    """Clean avalanche outcomes, count, and add new column
-    Input: cleaned dataframe and selected year by user
-    Output: dataframe"""
-
-    # Filter for user specified year
-    filtered_df = df[df['Season'] == year]
-
-    # Create dictionary for outcomes when != 0
-    outcome_metrics = {
-        'Caught': filtered_df[filtered_df['Caught'] > 0],
-        'Carried': filtered_df[filtered_df['Carried'] > 0],
-        'Buried - Partly': filtered_df[filtered_df['Buried - Partly'] > 0],
-        'Buried - Fully': filtered_df[filtered_df['Buried - Fully'] > 0 ]
-    }
-
-    # Aggregate outcomes
-    outcome_summary = []
-    for outcome, data in outcome_metrics.items():
-        summary = data[['Depth', 'Width', 'Vertical']].mean().round(1)
-        summary['Outcome'] = outcome
-        outcome_summary.append(summary)
-
-    return pd.DataFrame(outcome_summary).set_index('Outcome')
-
-def create_elevation_svg(data: Dict[str, Dict[str, Any]]) -> str:
-    """Generate the image (svg) for the elevation distribution
-    Input: elevation dictionary defined above
-    Output: SVG triangle mountain"""
-    
-    return f"""
-    <svg width="350" height="200" xmlns="http://www.w3.org/2000/svg">
-        <polygon points="100,10 120,70 80,70" style="fill:red;stroke:black;stroke-width:3"/>
-        <text x="70" y="50" fill="white" font-size="14" font-family="Arial" text-anchor="middle">9k+</text>
-        <text x="175" y="50" fill="white" font-size="14" font-family="Arial" text-anchor="middle">
-            {data['top']['count']} avalanches
-        </text>
-        <polygon points="80,70 120,70 140,140 60,140" style="fill:orange;stroke:black;stroke-width:3"/>
-        <text x="50" y="110" fill="white" font-size="14" font-family="Arial" text-anchor="middle">8-9k</text>
-        <text x="190" y="110" fill="white" font-size="14" font-family="Arial" text-anchor="middle">
-            {data['middle']['count']} avalanches
-        </text>
-        <polygon points="60,140 140,140 160,200 40,200" style="fill:green;stroke:black;stroke-width:3"/>
-        <text x="30" y="180" fill="white" font-size="14" font-family="Arial" text-anchor="middle">
-            <8k
-        </text>
-        <text x="210" y="180" fill="white" font-size="14" font-family="Arial" text-anchor="middle">
-            {data['bottom']['count']} avalanches
-        </text>
-    </svg>
-    """
+    weak_layer = df[['Season', 'Weak Layer']]
+    weak_layer = weak_layer[weak_layer['Season'] == year]
+    weak_layer_counts = weak_layer['Weak Layer'].value_counts()
+    return weak_layer_counts
 
 @st.cache_data
 def cached_load_and_preprocess_data(filepath):
@@ -171,58 +109,21 @@ def main():
     # Call function to Load / prepocess data  
     df = cached_load_and_preprocess_data(filepath)
 
-    # List of all seasons for filter / drop down
-    seasons = sorted(df['Season'].unique(), reverse=True)
+    year = '2012/13'
 
-    # Page layout (header / filter)
-    col_header_1, col_header_2 = st.columns([.9,.2], gap="small", vertical_alignment="center")
-    
-    with col_header_2:
-        year = st.selectbox('', seasons, placeholder="Select a season", label_visibility="collapsed", index=0)
-    
-    with col_header_1:
-        st.title(f"_{year}_ Avalanches at a Glance")
+    weak_layer_counts = determine_weak_layer(df, year)
 
-    # Dashboard layout (charts)
-    col1, col2 = st.columns(2, gap="small", vertical_alignment="center")
+    plt.figure(figsize=(8,5))
+    plt.bar(weak_layer_counts.index, weak_layer_counts.values, color='skyblue', edgecolor='black')
 
-    with col1:
-        # Elevation Distribution
-        elevation_data = get_elevation_distribution(df, year)
-        st.markdown(f"""
-        <div style="text-align: center;">
-            {create_elevation_svg(elevation_data)}
-        """, unsafe_allow_html=True)
+    plt.title("Weak Layer Distribution", fontsize=16)
+    plt.xlabel("Weak Layer", fontsize=12)
+    plt.ylabel("Count", fontsize=12)
+    plt.xticks(rotation=45, ha='right')  # Rotate labels for readability
 
-    with col2: 
-        # Avalanche
-        outcomes_data = process_avalanche_outcomes(df, year)
-
-        # Grouped bar chart for avalanch sizes
-        fig, ax = plt.subplots(figsize=(6,5))
-        outcomes = outcomes_data.index.tolist()
-        metrics = ['Depth', 'Width', 'Vertical']
-
-        width = 0.2
-        x = range(len(outcomes))
-
-        for i, metric in enumerate(metrics):
-            ax.bar(
-                [pos + i * width for pos in x],
-                outcomes_data[metric],
-                width=width,
-                label=metric,
-            )
-        
-        ax.set_title(f"Avalanche Outcomes by Sizes")
-        ax.set_xlabel("Outcomes")
-        ax.set_ylabel("Inches")
-        ax.set_xticks([pos + width for pos in x])
-        ax.set_xticklabels(outcomes)
-        ax.legend(title="Metrics")
-        ax.grid(axis="y", linestyle="--", alpha=0.7)
-
-        st.pyplot(fig)
+    # Show plot
+    plt.tight_layout()
+    plt.show()
 
 if __name__ == "__main__":
     main()

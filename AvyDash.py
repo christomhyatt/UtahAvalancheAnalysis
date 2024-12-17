@@ -9,7 +9,7 @@ import altair as alt
 ## Config Streamlit page
 st.set_page_config(
     layout="wide",
-    page_icon="V",
+    page_icon="🏔️",
     menu_items={
         'Get help': 'https://www.extremelycoolapp.com/help',
         'Report a bug': "https://www.extremelycoolapp.com/bug",
@@ -152,6 +152,24 @@ with col1:
         {svg_code}
     </div>
     """, unsafe_allow_html=True)
+
+    ### Second Chart
+    weak_layer = df[['Season', 'Weak Layer']]
+    weak_layer = weak_layer[weak_layer['Season'] == year]
+    weak_layer_counts = weak_layer['Weak Layer'].value_counts()
+
+    fig, ax = plt.subplots(figsize=(8,5))
+    wl_bars = ax.bar(weak_layer_counts.index, weak_layer_counts.values, color='skyblue', edgecolor='black')
+
+    for bar in wl_bars:
+        yval = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2, yval, round(yval, 1), ha='center', va='bottom')
+
+    ax.set_title("Weak Layer Distribution", fontsize=16)
+    ax.set_ylabel("Avalanches", fontsize=12)
+    ax.set_xticklabels(weak_layer_counts.index, rotation=45, ha='right', fontsize=8)  # Rotate labels for readability
+
+    st.pyplot(fig)
 
 with col2:
     ## Avalanche Sizes ## % of people caught in avalanches by size (Caught, Carried, Burried, Killed groups)
