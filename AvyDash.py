@@ -19,7 +19,7 @@ st.set_page_config(
 ## Pull in data
 filepath = '/Users/chrishyatt/Library/Mobile Documents/com~apple~CloudDocs/Projects/gh_repos/AvyDash/avalanches.csv'
 avy_csv_raw = pd.read_csv(filepath)
-df = pd.DataFrame(avy_csv_raw)
+df = pd.DataFrame(avy_csv_raw) 
 
 df = df[['Date', 'Region', 'Place', 'Trigger', 'Trigger: additional info',
        'Weak Layer', 'Depth', 'Width', 'Vertical', 'Aspect', 'Elevation',
@@ -94,7 +94,7 @@ with col1:
     avy_elevation['Elevation'] = avy_elevation.apply(determine_elevation, axis=1)
     avy_elevation = avy_elevation.drop(columns=['Top', 'Middle', 'Bottom', 'Elevation Detail'])
 
-    summary = avy_elevation.groupby(['Elevation', 'Season']).size().reset_index(name='Count')
+    avy_elevation = avy_elevation.groupby(['Elevation', 'Season']).size().reset_index(name='Count')
     
     # Function to safely extract data or return a default
     def safe_extract_data(df, row_index, col_range, col_count):
@@ -106,14 +106,14 @@ with col1:
         else:
             return {"range": "N/A", "count": 0}  # Default values if DataFrame is empty
 
-    top_data = summary[(summary['Elevation'] == '>9K') & (summary['Season'] == year)]
-    middle_data = summary[(summary['Elevation'] == '>8K and <9K') & (summary['Season'] == year)]
-    bottom_data = summary[(summary['Elevation'] == '<8K') & (summary['Season'] == year)]
+    top_data = avy_elevation[(avy_elevation['Elevation'] == '>9K') & (avy_elevation['Season'] == year)]
+    middle_data = avy_elevation[(avy_elevation['Elevation'] == '>8K and <9K') & (avy_elevation['Season'] == year)]
+    bottom_data = avy_elevation[(avy_elevation['Elevation'] == '<8K') & (avy_elevation['Season'] == year)]
 
-    data = {
-    "top": safe_extract_data(top_data, 0, 0, 2),
-    "middle": safe_extract_data(middle_data, 0, 0, 2),
-    "bottom": safe_extract_data(bottom_data, 0, 0, 2)
+    svg_data = {
+        "top": safe_extract_data(top_data, 0, 0, 2),
+        "middle": safe_extract_data(middle_data, 0, 0, 2),
+        "bottom": safe_extract_data(bottom_data, 0, 0, 2)
     }
 
     # SVG with embedded text
@@ -125,7 +125,7 @@ with col1:
             9k+ 
         </text>
         <text x="175" y="50" fill="white" font-size="14" font-family="Arial" text-anchor="middle">
-            {data['top']['count']} avalanches
+            {svg_data['top']['count']} avalanches
         </text>
         <!-- Middle section -->
         <polygon id="middle" points="80,70 120,70 140,140 60,140" style="fill:orange;stroke:black;stroke-width:3"/>
@@ -133,7 +133,7 @@ with col1:
             8-9k
         </text>
         <text x="190" y="110" fill="white" font-size="14" font-family="Arial" text-anchor="middle">
-            {data['middle']['count']} avalanches
+            {svg_data['middle']['count']} avalanches
         </text>
         <!-- Bottom section -->
         <polygon id="bottom" points="60,140 140,140 160,200 40,200" style="fill:green;stroke:black;stroke-width:3"/>
@@ -141,19 +141,24 @@ with col1:
             <8k
         </text>
         <text x="210" y="180" fill="white" font-size="14" font-family="Arial" text-anchor="middle">
-            {data['bottom']['count']} avalanches
+            {svg_data['bottom']['count']} avalanches
         </text>
     </svg>
     """
 
     # Render SVG in Streamlit
+    st.subheader('Avalanches by Elevation (ft)')
+
     st.markdown(f"""
     <div style="text-align: center;">
         {svg_code}
     </div>
     """, unsafe_allow_html=True)
 
-    ### Second Chart
+    ### Second Chart in Column 1
+    st.markdown('####')
+    st.subheader('Weak Layer Distribution')
+    weak_layer = df.copy()
     weak_layer = df[['Season', 'Weak Layer']]
     weak_layer = weak_layer[weak_layer['Season'] == year]
     weak_layer_counts = weak_layer['Weak Layer'].value_counts()
@@ -165,13 +170,13 @@ with col1:
         yval = bar.get_height()
         ax.text(bar.get_x() + bar.get_width()/2, yval, round(yval, 1), ha='center', va='bottom')
 
-    ax.set_title("Weak Layer Distribution", fontsize=16)
     ax.set_ylabel("Avalanches", fontsize=12)
     ax.set_xticklabels(weak_layer_counts.index, rotation=45, ha='right', fontsize=8)  # Rotate labels for readability
 
     st.pyplot(fig)
 
 with col2:
+    st.subheader('Human Triggered Avalanche Outcomes by Size')
     ## Avalanche Sizes ## % of people caught in avalanches by size (Caught, Carried, Burried, Killed groups)
     avy_size = df.copy()  # Ensure it's a standalone DataFrame to avoid warnings in console
     avy_size = df[['Season', 'Depth', 'Width', 'Vertical', 'Caught', 'Carried', 'Buried - Partly', 'Buried - Fully']]
@@ -257,3 +262,7 @@ with col2:
     ax.grid(axis="y", linestyle="--", alpha=0.7)
 
     st.pyplot(fig)
+
+    ### Second Chart in Column 2
+    st.markdown('####')
+    st.subheader('Avalanches by Aspect & Elevation Rose')
