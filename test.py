@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -6,10 +5,9 @@ import matplotlib.pyplot as plt
 import altair as alt
 from typing import Dict, Any
 
-
 filepath = '/Users/chrishyatt/Library/Mobile Documents/com~apple~CloudDocs/Projects/gh_repos/AvyDash/avalanches.csv'
 avy_csv_raw = pd.read_csv(filepath)
-df = pd.DataFrame(avy_csv_raw)
+df = pd.DataFrame(avy_csv_raw) 
 
 df = df[['Date', 'Region', 'Place', 'Trigger', 'Trigger: additional info',
        'Weak Layer', 'Depth', 'Width', 'Vertical', 'Aspect', 'Elevation',
@@ -19,6 +17,7 @@ df = df[['Date', 'Region', 'Place', 'Trigger', 'Trigger: additional info',
 ## Convert Date column in a Winter Seasin column
 df['Date'] = pd.to_datetime(df['Date'])
 
+## Creating the season column based on the conditions
 seasons = {
     "2024/25": (pd.to_datetime("2024-09-01"), pd.to_datetime("2025-07-01")),
     "2023/24": (pd.to_datetime("2023-09-01"), pd.to_datetime("2024-07-01")),
@@ -37,10 +36,22 @@ seasons = {
     "2010/11": (pd.to_datetime("2010-09-01"), pd.to_datetime("2011-07-01")),
     }
 
+# Creating the season column based on the conditions
 for season, (start_date, end_date) in seasons.items():
-    df[season] = ((df['Date'] >= start_date) & (df['Date'] <= end_date)).apply(
-        lambda x: season if x else "Unknown"
-    ) 
-    print(season)
+    df[season] = (df['Date'] >= start_date) & (df['Date'] <= end_date)
+    df[season] = df[season].apply(lambda x: season if x else "Unknown")
 
-print(df[season])
+df['Season'] = df[seasons.keys()].apply(lambda row: next((season for season in row if season != 'Unknown'), 'Unknown'), axis=1)
+df = df.drop(columns=seasons.keys())
+
+weak_layer = df.copy()
+weak_layer = df[['Season', 'Weak Layer', 'Region']]
+weak_layer = weak_layer[weak_layer['Season'] == '2024/25']
+weak_layer = weak_layer[(weak_layer['Weak Layer'].notnull()) & (weak_layer['Region'].notnull())]
+
+# Creating count column
+print(weak_layer)
+counts = weak_layer.groupby(['Weak Layer', 'Region']).size().reset_index(name='Count')
+print(counts) 
+weak_layer = (weak_layer.merge(counts, on=['Weak Layer', 'Region'], how='left')).drop_duplicates()
+print(weak_layer)

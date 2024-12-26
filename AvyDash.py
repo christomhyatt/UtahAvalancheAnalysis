@@ -56,6 +56,7 @@ for season, (start_date, end_date) in seasons.items():
 df['Season'] = df[seasons.keys()].apply(lambda row: next((season for season in row if season != 'Unknown'), 'Unknown'), axis=1)
 df = df.drop(columns=seasons.keys())
 
+
 # title and filter page formatting
 col_header_1, col_header_2 = st.columns([.9,.2], gap="small", vertical_alignment="center",)
 with col_header_2:
@@ -159,87 +160,85 @@ with col1:
     st.markdown('####')
     st.subheader('Weak Layer Distribution')
     weak_layer = df.copy()
-    weak_layer = df[['Season', 'Weak Layer']]
+    weak_layer = df[['Season', 'Weak Layer', 'Region']]
     weak_layer = weak_layer[weak_layer['Season'] == year]
-    weak_layer_counts = weak_layer['Weak Layer'].value_counts()
+    weak_layer = weak_layer[(weak_layer['Weak Layer'].notnull()) & (weak_layer['Region'].notnull())]
 
-    fig, ax = plt.subplots(figsize=(8,5))
-    wl_bars = ax.bar(weak_layer_counts.index, weak_layer_counts.values, color='skyblue', edgecolor='black')
+    # Creating count column
+    counts = weak_layer.groupby(['Weak Layer', 'Region']).size().reset_index(name='Count')
+    weak_layer = (weak_layer.merge(counts, on=['Weak Layer', 'Region'], how='left')).drop_duplicates()
 
-    for bar in wl_bars:
-        yval = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2, yval, round(yval, 1), ha='center', va='bottom')
-
-    ax.set_ylabel("Avalanches", fontsize=12)
-    ax.set_xticklabels(weak_layer_counts.index, rotation=45, ha='right', fontsize=8)  # Rotate labels for readability
-
-    st.pyplot(fig)
+    weak_layer_chart = alt.Chart(weak_layer).mark_bar().encode(
+        x='Weak Layer:N', # N = Nominal (categorical) data
+        y=alt.Y('Count:Q', stack='zero', title="Avalanches"), # Q = Quantitative data; stacked starting at 0
+        color='Region:N', # N = Nominal (categorical) data
+        tooltip=['Weak Layer', 'Region', 'Count'] # Shows values over hover
+    ).properties(
+        width=600,
+        height=400
+    )
+    st.altair_chart(weak_layer_chart, use_container_width=True)
 
 with col2:
-    st.subheader('Human Triggered Avalanche Outcomes by Size')
+    st.subheader('Human Involved Avalanche Outcomes by Size')
+
     ## Avalanche Sizes ## % of people caught in avalanches by size (Caught, Carried, Burried, Killed groups)
     avy_size = df.copy()  # Ensure it's a standalone DataFrame to avoid warnings in console
     avy_size = df[['Season', 'Depth', 'Width', 'Vertical', 'Caught', 'Carried', 'Buried - Partly', 'Buried - Fully']]
 
-    # Clean and convert Depth, Width, Vertical columns to numerical
-    avy_size.loc[:,'Depth'] = avy_size['Depth'].replace(regex=["'"], value='')
-    avy_size.loc[:, 'Depth'] = round(pd.to_numeric(avy_size['Depth'], errors="coerce"),1)
+    # Create a copy of Depth for ft only; Convert inches to feet; Clean up feet values and remove characters
+    def convert_sizes_to_inches(sizes_only):
+        """Function to loop through columns for replacement instead of copying code
+        Create a copy of Depth for ft only
+        Convert inches to feet
+        Clean up feet values and remove characters
+        """
+        for column in sizes_only.columns:
+            sizes_only[f'{column} (ft)'] = sizes_only[f'{column}'].copy(deep=True)
+            mask = sizes_only[f'{column} (ft)'].str.contains('"', na=False)
+            sizes_only.loc[mask, f'{column} (ft)'] = round(sizes_only.loc[mask, f'{column}'].str.replace('"', '').astype(float) / 12, 1)
+            mask = sizes_only[f'{column} (ft)'].str.contains("'",na=False)
+            sizes_only.loc[mask, f'{column} (ft)'] = sizes_only.loc[mask, f'{column}'].str.replace("'",'').str.replace(',','').astype(float)
+        sizes_only.drop(columns=['Depth', 'Width', 'Vertical'], axis=1, inplace=True)
+        return sizes_only
 
-    avy_size.loc[:, 'Width'] = avy_size['Width'].replace(regex=["'"], value='')
-    avy_size.loc[:, 'Width'] = round(pd.to_numeric(avy_size['Width'], errors="coerce"),1)
-
-    avy_size.loc[:, 'Vertical'] = avy_size['Vertical'].replace(regex=["'"], value='')
-    avy_size.loc[:, 'Vertical'] = round(pd.to_numeric(avy_size['Vertical'], errors="coerce"),1)
-
-    # Clean and convert Caught, Carried, Buried columns to numerical
-    avy_size.loc[:, 'Caught'] = round(pd.to_numeric(avy_size['Caught'], errors="coerce"),1)
-    avy_size.loc[:, 'Carried'] = round(pd.to_numeric(avy_size['Carried'], errors="coerce"),1)
-    avy_size.loc[:, 'Buried - Partly'] = round(pd.to_numeric(avy_size['Buried - Partly'], errors="coerce"),1)
-    avy_size.loc[:, 'Buried - Fully'] = round(pd.to_numeric(avy_size['Buried - Fully'], errors="coerce"),1)
-
-    avy_size = avy_size.dropna(subset=['Depth', 'Width', 'Vertical'])
+    sizes_only = convert_sizes_to_inches(avy_size[['Depth', 'Width', 'Vertical']])
+    avy_size = pd.concat([avy_size, sizes_only], axis=1)
+    avy_size.drop(columns=['Depth', 'Width', 'Vertical'], axis=1, inplace=True)
+    avy_size = avy_size.dropna(subset=['Depth (ft)', 'Width (ft)', 'Vertical (ft)'])
+    # print(avy_size[avy_size['Season'] == '2024/25'])
 
     ## Filter the year
     filtered_avy_size = avy_size.copy()
     filtered_avy_size = avy_size[avy_size['Season'] == year]
-    # print(filtered_avy_size.head())
 
-    # caught = season, AVG(depth), AVG(width), AVG(vertical)
-    caught_data = filtered_avy_size[['Season', 'Depth', 'Width', 'Vertical', 'Caught']]
+    caught_data = filtered_avy_size[['Season', 'Depth (ft)', 'Width (ft)', 'Vertical (ft)', 'Caught']]
     caught_data = caught_data[caught_data['Caught'] > 0]
     caught_data = caught_data.groupby('Season').mean().round(1)
     caught_data['Outcome'] = 'Caught'
-    # print(caught_data.head())
 
-    # carried = season, AVG(depth), AVG(width), AVG(vertical)
-    carried_data = filtered_avy_size[['Season', 'Depth', 'Width', 'Vertical', 'Carried']]
+    carried_data = filtered_avy_size[['Season', 'Depth (ft)', 'Width (ft)', 'Vertical (ft)', 'Carried']]
     carried_data = carried_data[carried_data['Carried'] > 0]
     carried_data = round(carried_data.groupby('Season').mean(),1)
     carried_data['Outcome'] = 'Carried'
-    # print(carried_data.head())
 
-    # Buried - Partly = season, AVG(depth), AVG(width), AVG(vertical)
-    partly_burried_data = filtered_avy_size[['Season', 'Depth', 'Width', 'Vertical', 'Buried - Partly']]
+    partly_burried_data = filtered_avy_size[['Season', 'Depth (ft)', 'Width (ft)', 'Vertical (ft)', 'Buried - Partly']]
     partly_burried_data = partly_burried_data[partly_burried_data['Buried - Partly'] > 0]
     partly_burried_data = round(partly_burried_data.groupby('Season').mean(),1)
     partly_burried_data['Outcome'] = 'Buried - Partly'
-    # print(partly_burried_data.head())
 
-    # carried = season, AVG(depth), AVG(width), AVG(vertical)
-    fully_burried_data = filtered_avy_size[['Season', 'Depth', 'Width', 'Vertical', 'Buried - Fully']]
+    fully_burried_data = filtered_avy_size[['Season', 'Depth (ft)', 'Width (ft)', 'Vertical (ft)', 'Buried - Fully']]
     fully_burried_data = fully_burried_data[fully_burried_data['Buried - Fully'] > 0]
     fully_burried_data = round(fully_burried_data.groupby('Season').mean(),1)
     fully_burried_data['Outcome'] = 'Buried - Fully'
-    # print(fully_burried_data.head())
 
     # Append DFs into one 
     full_dataset = pd.concat([caught_data, carried_data, partly_burried_data, fully_burried_data])
-    full_dataset = full_dataset.drop(columns = [ 'Caught', 'Carried', 'Buried - Partly', 'Buried - Fully'])
-    # full_dataset = full_dataset.set_index('Season')
+    full_dataset = full_dataset.drop(columns = ['Caught', 'Carried', 'Buried - Partly', 'Buried - Fully'])
 
     ## Chart data
     outcomes = full_dataset['Outcome'].values
-    metrics = ['Depth', 'Width', 'Vertical']
+    metrics = ['Depth (ft)', 'Width (ft)', 'Vertical (ft)']
     values = full_dataset[metrics].T
 
     fig, ax = plt.subplots(figsize=(6,5))
@@ -252,14 +251,13 @@ with col2:
             values.iloc[i],  # Values for this outcome
             width=width,
             label=metric,
-        )
-    ax.set_title(f"Avalanche Outcomes by Sizes ")
-    ax.set_xlabel("Outcomes")
-    ax.set_ylabel("Inches")
+            edgecolor='black'
+            )
+    ax.set_ylabel("Feet")
     ax.set_xticks([pos + width for pos in x])
     ax.set_xticklabels(outcomes)
-    ax.legend(title="Metrics")
-    ax.grid(axis="y", linestyle="--", alpha=0.7)
+    ax.legend()
+    # ax.grid(axis="y", linestyle="--", alpha=0.7)
 
     st.pyplot(fig)
 
