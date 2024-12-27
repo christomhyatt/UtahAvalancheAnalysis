@@ -235,31 +235,27 @@ with col2:
     # Append DFs into one 
     full_dataset = pd.concat([caught_data, carried_data, partly_burried_data, fully_burried_data])
     full_dataset = full_dataset.drop(columns = ['Caught', 'Carried', 'Buried - Partly', 'Buried - Fully'])
+    full_dataset = full_dataset.reset_index()
+    melted_df = pd.melt(
+        full_dataset,
+        id_vars=['Season', 'Outcome'],
+        value_vars=['Depth (ft)', 'Width (ft)', 'Vertical (ft)'],
+        var_name='Dimensions',
+        value_name='Values'
+    )
 
     ## Chart data
-    outcomes = full_dataset['Outcome'].values
-    metrics = ['Depth (ft)', 'Width (ft)', 'Vertical (ft)']
-    values = full_dataset[metrics].T
-
-    fig, ax = plt.subplots(figsize=(6,5))
-    x = range(len(outcomes))
-    width = .2
-
-    for i, metric in enumerate(metrics):
-        ax.bar(
-            [pos + i * width for pos in x],  # Offset each group by bar width
-            values.iloc[i],  # Values for this outcome
-            width=width,
-            label=metric,
-            edgecolor='black'
-            )
-    ax.set_ylabel("Feet")
-    ax.set_xticks([pos + width for pos in x])
-    ax.set_xticklabels(outcomes)
-    ax.legend()
-    # ax.grid(axis="y", linestyle="--", alpha=0.7)
-
-    st.pyplot(fig)
+    outcome_chart = (
+        alt.Chart(melted_df)
+        .mark_bar()
+        .encode(
+            x=alt.X("Outcome:N"),
+            y=alt.Y("Values:Q"),
+            color="Dimensions:N",
+            xOffset="Dimensions:N" # Groups bars for each Subgroup
+        )
+    )
+    st.altair_chart(outcome_chart, use_container_width=True)
 
     ### Second Chart in Column 2
     st.markdown('####')
