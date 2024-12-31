@@ -1,57 +1,58 @@
-import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import altair as alt
-from typing import Dict, Any
+from matplotlib.colors import Normalize
+from matplotlib.cm import ScalarMappable
+import streamlit as st
 
-filepath = '/Users/chrishyatt/Library/Mobile Documents/com~apple~CloudDocs/Projects/gh_repos/AvyDash/avalanches.csv'
-avy_csv_raw = pd.read_csv(filepath)
-df = pd.DataFrame(avy_csv_raw) 
+# Example DataFrame
+data = {
+    "Aspect": ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
+    "Elevation": [10000, 9500, 9000, 8500, 8000, 7500, 7000, 6500],
+    "Avalanche Count": [5, 15, 20, 10, 3, 8, 2, 12]
+}
+df = pd.DataFrame(data)
 
-df = df[['Date', 'Region', 'Place', 'Trigger', 'Trigger: additional info',
-       'Weak Layer', 'Depth', 'Width', 'Vertical', 'Aspect', 'Elevation',
-       'Coordinates', 'Caught', 'Carried', 'Buried - Partly', 'Buried - Fully',
-       'Injured', 'Killed']]
+# Map Aspect to Angles (N=0, E=90, etc.)
+aspect_to_angle = {
+    "N": 0, "NE": 45, "E": 90, "SE": 135,
+    "S": 180, "SW": 225, "W": 270, "NW": 315
+}
+df["Angle"] = df["Aspect"].map(aspect_to_angle)
 
-## Convert Date column in a Winter Seasin column
-df['Date'] = pd.to_datetime(df['Date'])
+# Normalize Elevation for radial scaling
+elevation_min, elevation_max = df["Elevation"].min(), df["Elevation"].max()
+df["Normalized Elevation"] = (df["Elevation"] - elevation_min) / (elevation_max - elevation_min)
 
-## Creating the season column based on the conditions
-seasons = {
-    "2024/25": (pd.to_datetime("2024-09-01"), pd.to_datetime("2025-07-01")),
-    "2023/24": (pd.to_datetime("2023-09-01"), pd.to_datetime("2024-07-01")),
-    "2022/23": (pd.to_datetime("2022-09-01"), pd.to_datetime("2023-07-01")),
-    "2021/22": (pd.to_datetime("2021-09-01"), pd.to_datetime("2022-07-01")),
-    "2020/21": (pd.to_datetime("2020-09-01"), pd.to_datetime("2021-07-01")),
-    "2019/20": (pd.to_datetime("2019-09-01"), pd.to_datetime("2020-07-01")),
-    "2018/19": (pd.to_datetime("2018-09-01"), pd.to_datetime("2019-07-01")),
-    "2017/18": (pd.to_datetime("2017-09-01"), pd.to_datetime("2018-07-01")),
-    "2016/17": (pd.to_datetime("2016-09-01"), pd.to_datetime("2017-07-01")),
-    "2015/16": (pd.to_datetime("2015-09-01"), pd.to_datetime("2016-07-01")),
-    "2014/15": (pd.to_datetime("2014-09-01"), pd.to_datetime("2015-07-01")),
-    "2013/14": (pd.to_datetime("2013-09-01"), pd.to_datetime("2014-07-01")),
-    "2012/13": (pd.to_datetime("2012-09-01"), pd.to_datetime("2013-07-01")),
-    "2011/12": (pd.to_datetime("2011-09-01"), pd.to_datetime("2012-07-01")),
-    "2010/11": (pd.to_datetime("2010-09-01"), pd.to_datetime("2011-07-01")),
-    }
+# Plot Heatmap on Polar Coordinates
+fig, ax = plt.subplots(subplot_kw={"projection": "polar"}, figsize=(8, 8))
 
-# Creating the season column based on the conditions
-for season, (start_date, end_date) in seasons.items():
-    df[season] = (df['Date'] >= start_date) & (df['Date'] <= end_date)
-    df[season] = df[season].apply(lambda x: season if x else "Unknown")
+# Scatter plot with color-mapped Avalanche Count
+cmap = plt.cm.hot
+norm = Normalize(vmin=df["Avalanche Count"].min(), vmax=df["Avalanche Count"].max())
+colors = cmap(norm(df["Avalanche Count"]))
 
-df['Season'] = df[seasons.keys()].apply(lambda row: next((season for season in row if season != 'Unknown'), 'Unknown'), axis=1)
-df = df.drop(columns=seasons.keys())
+scatter = ax.scatter(
+    np.radians(df["Angle"]),  # Convert angles to radians
+    df["Normalized Elevation"],  # Radial distance
+    c=colors,
+    s=200,  # Marker size
+    cmap=cmap,
+    alpha=0.8
+)
 
-weak_layer = df.copy()
-weak_layer = df[['Season', 'Weak Layer', 'Region']]
-weak_layer = weak_layer[weak_layer['Season'] == '2024/25']
-weak_layer = weak_layer[(weak_layer['Weak Layer'].notnull()) & (weak_layer['Region'].notnull())]
+# Add colorbar
+sm = ScalarMappable(cmap=cmap, norm=norm)
+sm.set_array([])
+cbar = plt.colorbar(sm, ax=ax, pad=0.1)
+cbar.set_label("Avalanche Count")
 
-# Creating count column
-print(weak_layer)
-counts = weak_layer.groupby(['Weak Layer', 'Region']).size().reset_index(name='Count')
-print(counts) 
-weak_layer = (weak_layer.merge(counts, on=['Weak Layer', 'Region'], how='left')).drop_duplicates()
-print(weak_layer)
+# Customize the plot
+ax.set_theta_zero_location("N")
+ax.set_theta_direction(-1)
+ax.set_xticks(np.radians(list(aspect_to_angle.values())))
+ax.set_xticklabels(list(aspect_to_angle.keys()))
+ax.set_yticklabels([f"{int(elevation_min + (e * (elevation_max - elevation_min)))} ft" for e in ax.get_yticks()])
+
+# Integrate with Streamlit
+st.pyplot(fig)

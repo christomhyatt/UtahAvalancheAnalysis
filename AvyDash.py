@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon
+from matplotlib.colors import Normalize
+from matplotlib.cm import ScalarMappable
 import numpy as np
 import altair as alt
 
@@ -260,3 +261,84 @@ with col2:
     ### Second Chart in Column 2
     st.markdown('####')
     st.subheader('Avalanches by Aspect & Elevation Rose')
+
+    avy_rose_map = df.copy()
+    avy_rose_map = avy_rose_map[avy_rose_map['Season'] == year]
+    avy_rose_map = avy_rose_map[['Aspect','Elevation']]
+
+    # Convert Elevation from String to numerical feet
+    avy_rose_map['Elevation'] = avy_rose_map['Elevation'].replace(regex=[',', "'"], value='')
+    avy_rose_map['Elevation'] = pd.to_numeric(avy_rose_map['Elevation'], errors="coerce")
+
+    # Convert Aspects to angles (e.g., 70 degrees) for mapping
+    aspect_to_angle = {
+        'North': 0,
+        'Northeast': 45,
+        'East': 90,
+        'Southeast': 135,
+        'South': 180,
+        'Southwest': 225,
+        'West': 270,
+        'Northwest': 315 
+    }
+    avy_rose_map['Aspect Angle'] = avy_rose_map['Aspect'].map(aspect_to_angle)
+
+    # Normalize elvation; Convert Elevations so highest elevation = 1 and the lowest elevation = 0
+    # Formaula to normalize: (X - Xmin) / (Xmax - Xmin)
+    elevation_min, elevation_max = avy_rose_map['Elevation'].min(), avy_rose_map['Elevation'].max()
+    avy_rose_map['Normalized Elevation'] = (avy_rose_map['Elevation'] - elevation_min) / (elevation_max - elevation_min)
+    avy_rose_map = avy_rose_map.drop(columns=['Elevation', 'Aspect'])
+
+    counts = avy_rose_map.groupby(['Normalized Elevation', 'Aspect Angle']).size().reset_index(name='Count')
+    avy_rose_map = (avy_rose_map.merge(counts, on=['Normalized Elevation', 'Aspect Angle'], how='left')).drop_duplicates()
+
+    print(avy_rose_map)
+
+    # Set up Polar Coordinate System 
+    fig, ax = plt.subplots(subplot_kw={'projection': 'polar'}, figsize=(8,8))
+
+    # Scatter plot with color-mapped Avalanche Count
+    cmap = plt.cm.hot # Defining what color scale for the color map (cm)
+    # Same normalization as above but for the color scale counts
+    norm = Normalize(vmin=avy_rose_map['Count'].min(), vmax=avy_rose_map['Count'].max()) 
+    colors = cmap(norm(avy_rose_map['Count']))
+
+    scatters = ax.scatter(
+        np.radians(avy_rose_map['Aspect Angle']), # Convert data type integer to radian (degrees)
+        avy_rose_map['Normalized Elevation'], # Radial distance
+        c=colors, # Color of each point
+        s=200, # Marker Size
+        cmap=cmap,
+        alpha=0.4 # Transparency of markers
+    ) 
+
+    # Colorbar (legend)
+    sm = ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+    cbar = plt.colorbar(sm, ax=ax, pad=0.1)
+    cbar.set_label("Avalanches")
+
+    # Customize the plot
+    # ax.grid(False) # Removes all grid lines; keeps circle outline
+    # ax.spines['polar'].set_visible(False) # remove circle outline
+    ax.grid(True)
+    for line in ax.xaxis.get_gridlines():  # Angular grid lines
+        line.set_alpha(0.2)  # Make the lines more transparent
+    for line in ax.yaxis.get_gridlines():  # Radial grid lines
+        line.set_alpha(0.2)
+    ax.set_theta_zero_location("N") 
+    ax.set_theta_direction(-1) # Sets direction in which the angles increase e.g., Clockwise
+    ax.set_xticks(np.radians(list(aspect_to_angle.values())))
+    ax.set_xticklabels(list(aspect_to_angle.keys()))
+    ax.set_yticklabels(
+        [f"{int(elevation_min + (e * (elevation_max - elevation_min)))} ft" for e in ax.get_yticks()],
+        verticalalignment='bottom',  # Move tick labels down
+        horizontalalignment='center'  # Center the labels horizontally
+    ) ## not right
+    # Adjust radial label padding
+    ax.tick_params(axis='y', pad=-15) ## not right
+
+    # Integrate with Streamlit
+    st.pyplot(fig)
+
+    ## Error with Angle Radial
