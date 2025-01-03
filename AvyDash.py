@@ -170,8 +170,8 @@ with col1:
     weak_layer = (weak_layer.merge(counts, on=['Weak Layer', 'Region'], how='left')).drop_duplicates()
 
     weak_layer_chart = alt.Chart(weak_layer).mark_bar().encode(
-        x='Weak Layer:N', # N = Nominal (categorical) data
-        y=alt.Y('Count:Q', stack='zero', title="Avalanches"), # Q = Quantitative data; stacked starting at 0
+        x=alt.X('Weak Layer:N', title=''), # N = Nominal (categorical) data
+        y=alt.Y('Count:Q', stack='zero', title=''), # Q = Quantitative data; stacked starting at 0
         color='Region:N', # N = Nominal (categorical) data
         tooltip=['Weak Layer', 'Region', 'Count'] # Shows values over hover
     ).properties(
@@ -181,7 +181,7 @@ with col1:
     st.altair_chart(weak_layer_chart, use_container_width=True)
 
 with col2:
-    st.subheader('Human Involved Avalanche Outcomes by Size')
+    st.subheader('Human Involved Avalanche Outcomes by AVG Size')
 
     ## Avalanche Sizes ## % of people caught in avalanches by size (Caught, Carried, Burried, Killed groups)
     avy_size = df.copy()  # Ensure it's a standalone DataFrame to avoid warnings in console
@@ -250,10 +250,11 @@ with col2:
         alt.Chart(melted_df)
         .mark_bar()
         .encode(
-            x=alt.X("Outcome:N"),
-            y=alt.Y("Values:Q"),
+            x=alt.X("Outcome:N", title=''), # axis=alt.Axis(labels=False))
+            y=alt.Y("Values:Q", title=''),
             color="Dimensions:N",
             xOffset="Dimensions:N" # Groups bars for each Subgroup
+            
         )
     )
     st.altair_chart(outcome_chart, use_container_width=True)
@@ -283,6 +284,19 @@ with col2:
     }
     avy_rose_map['Aspect Angle'] = avy_rose_map['Aspect'].map(aspect_to_angle)
 
+    # Convert Aspect names to Abbreviations
+    aspect_to_abbr = {
+        'North': 'N',
+        'Northeast': 'NE',
+        'East': 'E',
+        'Southeast': 'SE',
+        'South': 'S',
+        'Southwest': 'SW',
+        'West': 'W',
+        'Northwest': 'NW' 
+    }
+    # avy_rose_map['Aspect'] = avy_rose_map['Aspect'].map(aspect_to_abbr)
+
     # Normalize elvation; Convert Elevations so highest elevation = 1 and the lowest elevation = 0
     # Formaula to normalize: (X - Xmin) / (Xmax - Xmin)
     elevation_min, elevation_max = avy_rose_map['Elevation'].min(), avy_rose_map['Elevation'].max()
@@ -292,13 +306,16 @@ with col2:
     counts = avy_rose_map.groupby(['Normalized Elevation', 'Aspect Angle']).size().reset_index(name='Count')
     avy_rose_map = (avy_rose_map.merge(counts, on=['Normalized Elevation', 'Aspect Angle'], how='left')).drop_duplicates()
 
-    print(avy_rose_map)
+    # Add jitter to avoid overlapping data
+    jitter = np.random.normal(0, 3, len(avy_rose_map['Aspect Angle']))
+    avy_rose_map['Aspect Angle'] = avy_rose_map['Aspect Angle'] + jitter
 
-    # Set up Polar Coordinate System 
+    # Set up Polar Coordinate System
+    plt.style.use('dark_background')
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'}, figsize=(8,8))
 
     # Scatter plot with color-mapped Avalanche Count
-    cmap = plt.cm.hot # Defining what color scale for the color map (cm)
+    cmap = plt.cm.YlOrRd_r # Defining what color scale for the color map (cm)
     # Same normalization as above but for the color scale counts
     norm = Normalize(vmin=avy_rose_map['Count'].min(), vmax=avy_rose_map['Count'].max()) 
     colors = cmap(norm(avy_rose_map['Count']))
@@ -307,9 +324,9 @@ with col2:
         np.radians(avy_rose_map['Aspect Angle']), # Convert data type integer to radian (degrees)
         avy_rose_map['Normalized Elevation'], # Radial distance
         c=colors, # Color of each point
-        s=200, # Marker Size
+        s=100, # Marker Size
         cmap=cmap,
-        alpha=0.4 # Transparency of markers
+        alpha=0.7 # Transparency of markers
     ) 
 
     # Colorbar (legend)
@@ -319,26 +336,41 @@ with col2:
     cbar.set_label("Avalanches")
 
     # Customize the plot
-    # ax.grid(False) # Removes all grid lines; keeps circle outline
-    # ax.spines['polar'].set_visible(False) # remove circle outline
-    ax.grid(True)
-    for line in ax.xaxis.get_gridlines():  # Angular grid lines
-        line.set_alpha(0.2)  # Make the lines more transparent
-    for line in ax.yaxis.get_gridlines():  # Radial grid lines
-        line.set_alpha(0.2)
-    ax.set_theta_zero_location("N") 
+    ax.set_theta_zero_location('N') # Sets 0 direction to North
     ax.set_theta_direction(-1) # Sets direction in which the angles increase e.g., Clockwise
     ax.set_xticks(np.radians(list(aspect_to_angle.values())))
-    ax.set_xticklabels(list(aspect_to_angle.keys()))
-    ax.set_yticklabels(
-        [f"{int(elevation_min + (e * (elevation_max - elevation_min)))} ft" for e in ax.get_yticks()],
-        verticalalignment='bottom',  # Move tick labels down
-        horizontalalignment='center'  # Center the labels horizontally
-    ) ## not right
-    # Adjust radial label padding
-    ax.tick_params(axis='y', pad=-15) ## not right
+    ax.set_xticklabels(list(aspect_to_abbr.values()))
+
+    # Get number of gridlines
+    num_gridlines = len(ax.yaxis.get_gridlines())
+    
+    # Generate elevation labels for each gridline
+    elevation_ticks = np.linspace(0, 1, num_gridlines)
+    elevation_labels = [f"{int(elevation_min + (e * (elevation_max - elevation_min)))} ft" for e in elevation_ticks]
+    ax.set_yticklabels([])  # Clear existing labels
+    
+    # Custom label positioning
+    for idx, label in enumerate(elevation_labels):
+        # Skip the last elevation plot; unnecessary
+        if idx == len(elevation_labels) - 1:
+            continue
+        # Position of labels degrees
+        angle = -9.8 
+        radius = ax.get_yticks()[idx]
+        # if radius > 0:  # Don't place label at origin
+        ax.text(angle, 
+                radius, 
+                label,
+                ha='center', 
+                va='top',
+                rotation=0,
+                transform=ax.transData)
+
+    # Customize grid lines
+    for line in ax.xaxis.get_gridlines():  
+        line.set_alpha(0.2)  # Make the angular grid lines more transparent
+    for line in ax.yaxis.get_gridlines():  
+        line.set_alpha(0.2)  # Make the radial grid lines more transparent
 
     # Integrate with Streamlit
     st.pyplot(fig)
-
-    ## Error with Angle Radial
