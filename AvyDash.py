@@ -7,7 +7,7 @@ from matplotlib.cm import ScalarMappable
 import numpy as np
 import altair as alt
 
-## Config Streamlit page
+# Config Streamlit page
 st.set_page_config(
     layout="wide",
     page_icon="🏔️",
@@ -17,7 +17,7 @@ st.set_page_config(
         'About': "# This is a header. This is an *extremely* cool app!"
         })
 
-## Pull in data
+# Pull in data
 filepath = '/Users/chrishyatt/Library/Mobile Documents/com~apple~CloudDocs/Projects/gh_repos/AvyDash/avalanches.csv'
 avy_csv_raw = pd.read_csv(filepath)
 df = pd.DataFrame(avy_csv_raw) 
@@ -27,10 +27,10 @@ df = df[['Date', 'Region', 'Place', 'Trigger', 'Trigger: additional info',
        'Coordinates', 'Caught', 'Carried', 'Buried - Partly', 'Buried - Fully',
        'Injured', 'Killed']]
 
-## Convert Date column in a Winter Seasin column
+# Convert Date column in a Winter Seasin column
 df['Date'] = pd.to_datetime(df['Date'])
 
-## Creating the season column based on the conditions
+# Creating the season column based on the conditions
 seasons = {
     "2024/25": (pd.to_datetime("2024-09-01"), pd.to_datetime("2025-07-01")),
     "2023/24": (pd.to_datetime("2023-09-01"), pd.to_datetime("2024-07-01")),
@@ -58,31 +58,62 @@ df['Season'] = df[seasons.keys()].apply(lambda row: next((season for season in r
 df = df.drop(columns=seasons.keys())
 
 
-# title and filter page formatting
-col_header_1, col_header_2 = st.columns([.9,.2], gap="small", vertical_alignment="center",)
+# Title and filter page formatting
+col_header_1, col_header_2 = st.columns([.9,.2], gap='small', vertical_alignment="center")
 with col_header_2:
-    year = st.selectbox('',(seasons.keys()), placeholder="Select a season", label_visibility="collapsed", index=0)
+    year = st.selectbox('',(seasons.keys()), placeholder='Select a season', label_visibility='collapsed', index=0)
 with col_header_1:
-    st.title(f"_{year}_ Avalanches at a Glance")
+    st.title(f'_{year}_ Avalanches at a Glance')
 
-# dashboards
-col1, col2 = st.columns(2, gap="small", vertical_alignment="center")
+# High level metrics 
+col_metric_1, col_metric_2, col_metric_3, col_metric_4 = st.columns(4, gap='small', vertical_alignment='center')
+with col_metric_1:
+    num_avalanches = df.copy()
+    num_avalanches = num_avalanches[['Season', 'Date']]
+    num_avalanches = num_avalanches[num_avalanches['Season'] == year]
+    num_avalanches = num_avalanches.count()
+    st.metric(label="Avalanches", value=num_avalanches.loc['Season'])
+with col_metric_2:
+    top_location = df.copy()
+    top_location = top_location[['Season', 'Place']]
+    top_location = top_location[top_location['Season'] == year]
+    top_location = top_location['Place'].value_counts().sort_values(ascending=False)
+    top_location_count = top_location.max()
+    top_location = top_location.idxmax()
+    st.metric(label='Top Location', value=f'{top_location} ({top_location_count})') # Delta from year before!!
+with col_metric_3:
+    num_fatalities = df.copy()
+    num_fatalities = num_fatalities[['Season', 'Killed']]
+    num_fatalities = num_fatalities[(num_fatalities['Season'] == year) & (num_fatalities['Killed'] >= 1)]
+    num_fatalities = num_fatalities.sum()
+    st.metric(label='Fatalities', value=int(num_fatalities.loc['Killed']))
+with col_metric_4:
+    top_trigger = df.copy()
+    top_trigger = top_trigger[['Season', 'Trigger']]
+    top_trigger = top_trigger[top_trigger['Season'] == year]
+    top_trigger = top_trigger['Trigger'].value_counts().sort_values(ascending=False)
+    top_trigger_count = top_trigger.max()
+    top_trigger = top_trigger.idxmax()
+    st.metric(label='Top Trigger', value=f'{top_trigger} ({top_trigger_count})')
+
+# Defining dashboards columns for charts
+col1, col2 = st.columns(2, gap='small', vertical_alignment='center')
 
 with col1:
-    ## Elevation Data Only
+    # Pull elevation sata only
     avy_elevation = df.copy()
     avy_elevation = df[['Elevation', 'Season']]
 
-    # Clean and convert Elevation column to numerical
+    # Clean and convert elevation column to numerical data type
     avy_elevation['Elevation'] = avy_elevation['Elevation'].replace(regex=[',', "'"], value='')
     avy_elevation['Elevation Detail'] = pd.to_numeric(avy_elevation['Elevation'], errors="coerce")
 
-    # Defining Elevation levels
+    # Defining elevation levels
     avy_elevation['Top'] = avy_elevation['Elevation Detail'] > 9000
     avy_elevation['Middle'] = (avy_elevation['Elevation Detail'] < 9000) & (avy_elevation['Elevation Detail'] > 8000)
     avy_elevation['Bottom'] = avy_elevation['Elevation Detail'] < 8000
 
-    # Collapsing Elevation levels into one column
+    # Collapsing elevation levels into one column
     def determine_elevation(row):
         if row['Top']:
             return ">9K"
@@ -98,7 +129,7 @@ with col1:
 
     avy_elevation = avy_elevation.groupby(['Elevation', 'Season']).size().reset_index(name='Count')
     
-    # Function to safely extract data or return a default
+    # Function to safely extract data or return a default for SVG format 
     def safe_extract_data(df, row_index, col_range, col_count):
         if not df.empty:
             try:
@@ -157,7 +188,7 @@ with col1:
     </div>
     """, unsafe_allow_html=True)
 
-    ### Second Chart in Column 1
+    # Second chart in column 1
     st.markdown('####')
     st.subheader('Weak Layer Distribution')
     weak_layer = df.copy()
@@ -183,17 +214,12 @@ with col1:
 with col2:
     st.subheader('Human Involved Avalanche Outcomes by AVG Size')
 
-    ## Avalanche Sizes ## % of people caught in avalanches by size (Caught, Carried, Burried, Killed groups)
-    avy_size = df.copy()  # Ensure it's a standalone DataFrame to avoid warnings in console
+    # % of people caught in avalanches by size (Caught, Carried, Burried, Killed groups)
+    avy_size = df.copy() 
     avy_size = df[['Season', 'Depth', 'Width', 'Vertical', 'Caught', 'Carried', 'Buried - Partly', 'Buried - Fully']]
 
     # Create a copy of Depth for ft only; Convert inches to feet; Clean up feet values and remove characters
     def convert_sizes_to_inches(sizes_only):
-        """Function to loop through columns for replacement instead of copying code
-        Create a copy of Depth for ft only
-        Convert inches to feet
-        Clean up feet values and remove characters
-        """
         for column in sizes_only.columns:
             sizes_only[f'{column} (ft)'] = sizes_only[f'{column}'].copy(deep=True)
             mask = sizes_only[f'{column} (ft)'].str.contains('"', na=False)
@@ -207,9 +233,8 @@ with col2:
     avy_size = pd.concat([avy_size, sizes_only], axis=1)
     avy_size.drop(columns=['Depth', 'Width', 'Vertical'], axis=1, inplace=True)
     avy_size = avy_size.dropna(subset=['Depth (ft)', 'Width (ft)', 'Vertical (ft)'])
-    # print(avy_size[avy_size['Season'] == '2024/25'])
 
-    ## Filter the year
+    # Filter the year
     filtered_avy_size = avy_size.copy()
     filtered_avy_size = avy_size[avy_size['Season'] == year]
 
@@ -245,7 +270,7 @@ with col2:
         value_name='Values'
     )
 
-    ## Chart data
+    # Chart data
     outcome_chart = (
         alt.Chart(melted_df)
         .mark_bar()
@@ -254,12 +279,11 @@ with col2:
             y=alt.Y("Values:Q", title=''),
             color="Dimensions:N",
             xOffset="Dimensions:N" # Groups bars for each Subgroup
-            
         )
     )
     st.altair_chart(outcome_chart, use_container_width=True)
 
-    ### Second Chart in Column 2
+    # Second Chart in Column 2
     st.markdown('####')
     st.subheader('Avalanches by Aspect & Elevation Rose')
 
@@ -267,11 +291,11 @@ with col2:
     avy_rose_map = avy_rose_map[avy_rose_map['Season'] == year]
     avy_rose_map = avy_rose_map[['Aspect','Elevation']]
 
-    # Convert Elevation from String to numerical feet
+    # Convert elevation from string to numerical feet
     avy_rose_map['Elevation'] = avy_rose_map['Elevation'].replace(regex=[',', "'"], value='')
     avy_rose_map['Elevation'] = pd.to_numeric(avy_rose_map['Elevation'], errors="coerce")
 
-    # Convert Aspects to angles (e.g., 70 degrees) for mapping
+    # Convert aspects to angles (e.g., 70 degrees) for mapping
     aspect_to_angle = {
         'North': 0,
         'Northeast': 45,
@@ -284,7 +308,7 @@ with col2:
     }
     avy_rose_map['Aspect Angle'] = avy_rose_map['Aspect'].map(aspect_to_angle)
 
-    # Convert Aspect names to Abbreviations
+    # Convert aspect names to abbreviations
     aspect_to_abbr = {
         'North': 'N',
         'Northeast': 'NE',
@@ -295,10 +319,9 @@ with col2:
         'West': 'W',
         'Northwest': 'NW' 
     }
-    # avy_rose_map['Aspect'] = avy_rose_map['Aspect'].map(aspect_to_abbr)
 
     # Normalize elvation; Convert Elevations so highest elevation = 1 and the lowest elevation = 0
-    # Formaula to normalize: (X - Xmin) / (Xmax - Xmin)
+        # Formaula to normalize: (X - Xmin) / (Xmax - Xmin)
     elevation_min, elevation_max = avy_rose_map['Elevation'].min(), avy_rose_map['Elevation'].max()
     avy_rose_map['Normalized Elevation'] = (avy_rose_map['Elevation'] - elevation_min) / (elevation_max - elevation_min)
     avy_rose_map = avy_rose_map.drop(columns=['Elevation', 'Aspect'])
@@ -316,8 +339,7 @@ with col2:
 
     # Scatter plot with color-mapped Avalanche Count
     cmap = plt.cm.YlOrRd_r # Defining what color scale for the color map (cm)
-    # Same normalization as above but for the color scale counts
-    norm = Normalize(vmin=avy_rose_map['Count'].min(), vmax=avy_rose_map['Count'].max()) 
+    norm = Normalize(vmin=avy_rose_map['Count'].min(), vmax=avy_rose_map['Count'].max()) # Normalization for the color scale counts
     colors = cmap(norm(avy_rose_map['Count']))
 
     scatters = ax.scatter(
