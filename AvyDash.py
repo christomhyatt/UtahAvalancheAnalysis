@@ -338,26 +338,27 @@ with col_graph_4:
     all_avys['Month'] = all_avys['Month Num'].map(month_map)
     all_avys = all_avys.drop(columns = ['Date', 'Month Num'])
 
-    # Groupby Season and Date with a new count column
-    all_avys = all_avys.groupby('Season').value_counts()
+    # Groupby Season and Date with a new count column; reset_index applies column name
+    all_avys = all_avys.groupby('Season').value_counts().reset_index()
 
-    # Pivot dataframe to have seasons as individual columns
-    all_avys = all_avys.unstack(level=0)
-    all_avys = all_avys.drop(columns = 'Unknown')
-                              
-    # Create multi line chart st.line_chart
-    st.line_chart(all_avys, use_container_width=True)
+    # Remove Unkown Seasons
+    all_avys = all_avys[all_avys['Season'] != 'Unknown']
 
-    ## Stopping here (transitioning into altair for more customization)
-    all_avys_chart = (
-        alt.Chart(all_avys)
-        .mark_line()
-        .encode(
-            x=alt.X("Month:N", title=''),
-            y=alt.Y("Values:Q", title=''),
-            color=alt.Color('Season:N', legend=None)
-        )
-    )
+    # Chart data with altair to make interactive
+    all_avys_chart = (alt.Chart(all_avys)
+                      .mark_line(point=True)
+                      .encode(
+                          x=alt.X('Month:N', title=''),
+                          y=alt.Y('count:Q', title=''),
+                          color=alt.Color('Season:N', title='Season'),
+                          tooltip=['Month:N', 'Season:N', 'Count:Q']
+                      )
+                      .interactive() # Enables zoom and pan
+                      .properties(
+                          width=700,
+                          height=400
+                      )
+                    )
     st.altair_chart(all_avys_chart, use_container_width=True)
 
 
