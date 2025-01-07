@@ -6,6 +6,7 @@ from matplotlib.colors import Normalize
 from matplotlib.cm import ScalarMappable
 import numpy as np
 import altair as alt
+import os
 
 # Config Streamlit page
 st.set_page_config(
@@ -19,7 +20,8 @@ st.set_page_config(
         })
 
 # Pull in data
-filepath = '/Users/chrishyatt/Library/Mobile Documents/com~apple~CloudDocs/Projects/gh_repos/AvyDash/avalanches.csv'
+# filepath = '/Users/chrishyatt/Library/Mobile Documents/com~apple~CloudDocs/Projects/gh_repos/AvyDash/avalanches.csv'
+filepath = os.path.join(os.path.dirname(__file__), 'avalanches.csv')
 avy_csv_raw = pd.read_csv(filepath)
 df = pd.DataFrame(avy_csv_raw) 
 
