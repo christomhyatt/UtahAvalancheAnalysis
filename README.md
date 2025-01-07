@@ -42,3 +42,6 @@ This project is ongoing, and I plan to:
 - Expand the dashboard’s functionality to include predictive modeling and interactive visualizations.
 
 Feel free to explore the repository and provide feedback or suggestions for improvement. Thank you for your interest!
+
+![image](https://github.com/user-attachments/assets/56f67ba0-c5df-4247-a169-cba024b03b5e)
+
