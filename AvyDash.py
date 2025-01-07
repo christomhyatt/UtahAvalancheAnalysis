@@ -12,9 +12,10 @@ st.set_page_config(
     layout="wide",
     page_icon="🏔️",
     menu_items={
-        'Get help': 'https://www.extremelycoolapp.com/help',
-        'Report a bug': "https://www.extremelycoolapp.com/bug",
-        'About': "# This is a header. This is an *extremely* cool app!"
+        'About': "All data is gathered from the Utah Avalanch Center (UAC).\
+             The UAC tracks all backcountry observations related to Utah's\
+             snowpack and avalaches on their website (https://utahavalanchecenter.org/observations).\
+             \n\n***This dashboard was created strictly for educational purposes to better understand Utah's snowpack.***"
         })
 
 # Pull in data
@@ -47,7 +48,16 @@ seasons = {
     "2012/13": (pd.to_datetime("2012-08-01"), pd.to_datetime("2013-06-01")),
     "2011/12": (pd.to_datetime("2011-08-01"), pd.to_datetime("2012-06-01")),
     "2010/11": (pd.to_datetime("2010-08-01"), pd.to_datetime("2011-06-01")),
-    "2009/10": (pd.to_datetime("2009-08-01"), pd.to_datetime("2010-06-01"))
+    "2009/10": (pd.to_datetime("2009-08-01"), pd.to_datetime("2010-06-01")),
+    "2008/09": (pd.to_datetime("2008-08-01"), pd.to_datetime("2009-06-01")),
+    "2007/08": (pd.to_datetime("2007-08-01"), pd.to_datetime("2008-06-01")),
+    "2006/07": (pd.to_datetime("2006-08-01"), pd.to_datetime("2007-06-01")),
+    "2005/06": (pd.to_datetime("2005-08-01"), pd.to_datetime("2006-06-01")),
+    "2004/05": (pd.to_datetime("2004-08-01"), pd.to_datetime("2005-06-01")),
+    "2003/04": (pd.to_datetime("2003-08-01"), pd.to_datetime("2004-06-01")),
+    "2002/03": (pd.to_datetime("2002-08-01"), pd.to_datetime("2003-06-01")),
+    "2001/02": (pd.to_datetime("2001-08-01"), pd.to_datetime("2002-06-01")),
+    "2000/01": (pd.to_datetime("2000-08-01"), pd.to_datetime("2001-06-01"))
     }
 
 # Creating the season column based on the conditions
@@ -63,7 +73,7 @@ col_header_1, col_header_2 = st.columns([.9,.2], gap='small', vertical_alignment
 with col_header_2:
     year = st.selectbox('',(seasons.keys()), placeholder='Select a season', label_visibility='collapsed', index=0)
 with col_header_1:
-    st.title(f'_{year}_ Avalanches at a Glance')
+    st.title(f'_{year}_ Utah Avalanch & Snowpack')
 
 # High level metrics 
 col_metric_1, col_metric_2, col_metric_3, col_metric_4 = st.columns(4, gap='small', vertical_alignment='center')
@@ -237,7 +247,7 @@ with col_graph_2:
     st.altair_chart(weak_layer_chart, use_container_width=True,)
 
 with col_graph_3:
-    st.markdown('##### Human Involved Avalanche Outcomes by AVG Size')
+    st.markdown('##### Average Size of Human Triggered Avalanches')
 
     # % of people caught in avalanches by size (Caught, Carried, Burried, Killed groups)
     avy_size = df.copy() 
@@ -300,7 +310,7 @@ with col_graph_3:
         alt.Chart(melted_df)
         .mark_bar()
         .encode(
-            x=alt.X("Outcome:N", title=''), # axis=alt.Axis(labels=False))
+            x=alt.X("Outcome:N", title=''),
             y=alt.Y("Values:Q", title=''),
             color=alt.Color('Dimensions:N', legend=None),
             xOffset="Dimensions:N" # Groups bars for each Subgroup
@@ -311,6 +321,7 @@ with col_graph_3:
 col_graph_4, col_comments_5 = st.columns(2, gap='small', vertical_alignment='center')
 
 with col_graph_4:
+    st.markdown('#####')
     st.markdown('##### Avalanches by Month (all seasons)')
 
     all_avys = df.copy()
@@ -361,92 +372,16 @@ with col_graph_4:
                     )
     st.altair_chart(all_avys_chart, use_container_width=True)
 
-
-#    # 1st chart
-#     # Pull elevation data only
-#     avy_elevation = df.copy()
-#     avy_elevation = df[['Elevation', 'Season']]
-
-#     # Clean and convert elevation column to numerical data type
-#     avy_elevation['Elevation'] = avy_elevation['Elevation'].replace(regex=[',', "'"], value='')
-#     avy_elevation['Elevation Detail'] = pd.to_numeric(avy_elevation['Elevation'], errors="coerce")
-
-#     # Defining elevation levels
-#     avy_elevation['Top'] = avy_elevation['Elevation Detail'] > 9000
-#     avy_elevation['Middle'] = (avy_elevation['Elevation Detail'] < 9000) & (avy_elevation['Elevation Detail'] > 8000)
-#     avy_elevation['Bottom'] = avy_elevation['Elevation Detail'] < 8000
-
-#     # Collapsing elevation levels into one column
-#     def determine_elevation(row):
-#         if row['Top']:
-#             return ">9K"
-#         elif row['Middle']:
-#             return ">8K and <9K"
-#         elif row['Bottom']:
-#             return "<8K"
-#         else:
-#             return "Unknown"
-
-#     avy_elevation['Elevation'] = avy_elevation.apply(determine_elevation, axis=1)
-#     avy_elevation = avy_elevation.drop(columns=['Top', 'Middle', 'Bottom', 'Elevation Detail'])
-
-#     avy_elevation = avy_elevation.groupby(['Elevation', 'Season']).size().reset_index(name='Count')
-    
-#     # Function to safely extract data or return a default for SVG format 
-#     def safe_extract_data(df, row_index, col_range, col_count):
-#         if not df.empty:
-#             try:
-#                 return {"range": df.iloc[row_index, col_range], "count": df.iloc[row_index, col_count]}
-#             except IndexError:
-#                 return {"range": "N/A", "count": 0}  # Default values if index is out of range
-#         else:
-#             return {"range": "N/A", "count": 0}  # Default values if DataFrame is empty
-
-#     top_data = avy_elevation[(avy_elevation['Elevation'] == '>9K') & (avy_elevation['Season'] == year)]
-#     middle_data = avy_elevation[(avy_elevation['Elevation'] == '>8K and <9K') & (avy_elevation['Season'] == year)]
-#     bottom_data = avy_elevation[(avy_elevation['Elevation'] == '<8K') & (avy_elevation['Season'] == year)]
-
-#     svg_data = {
-#         "top": safe_extract_data(top_data, 0, 0, 2),
-#         "middle": safe_extract_data(middle_data, 0, 0, 2),
-#         "bottom": safe_extract_data(bottom_data, 0, 0, 2)
-#     }
-
-#     # SVG with embedded text
-#     svg_code = f"""
-#     <svg width="350" height="200" xmlns="http://www.w3.org/2000/svg">
-#         <!-- Top section -->
-#         <polygon id="top" points="100,10 120,70 80,70" style="fill:red;stroke:black;stroke-width:3"/>
-#         <text x="70" y="50" fill="white" font-size="14" font-family="Arial" text-anchor="middle">
-#             9k+ 
-#         </text>
-#         <text x="175" y="50" fill="white" font-size="14" font-family="Arial" text-anchor="middle">
-#             {svg_data['top']['count']} avalanches
-#         </text>
-#         <!-- Middle section -->
-#         <polygon id="middle" points="80,70 120,70 140,140 60,140" style="fill:orange;stroke:black;stroke-width:3"/>
-#         <text x="50" y="110" fill="white" font-size="14" font-family="Arial" text-anchor="middle">
-#             8-9k
-#         </text>
-#         <text x="190" y="110" fill="white" font-size="14" font-family="Arial" text-anchor="middle">
-#             {svg_data['middle']['count']} avalanches
-#         </text>
-#         <!-- Bottom section -->
-#         <polygon id="bottom" points="60,140 140,140 160,200 40,200" style="fill:green;stroke:black;stroke-width:3"/>
-#         <text x="30" y="180" fill="white" font-size="14" font-family="Arial" text-anchor="middle">
-#             <8k
-#         </text>
-#         <text x="210" y="180" fill="white" font-size="14" font-family="Arial" text-anchor="middle">
-#             {svg_data['bottom']['count']} avalanches
-#         </text>
-#     </svg>
-#     """
-
-#     # Render SVG in Streamlit
-#     st.subheader('Avalanches by Elevation (ft)')
-
-#     st.markdown(f"""
-#     <div style="text-align: center;">
-#         {svg_code}
-#     </div>
-#     """, unsafe_allow_html=True)
+with col_comments_5:
+    # st.markdown('##### Observations:')
+    st.markdown("**Observation**: The northeast aspect consistently experiences the highest number of avalanches. \
+                \n\n- **Hypothesis**: This is due to consistent wind loading, with westerly winds depositing snow on east-facing slopes. \
+                Additionally, being in the Northern Hemisphere, Utah's north-facing slopes receive less sunlight, leading to colder temperatures and increased faceting.")
+    st.markdown("**Observation**: The largest weak layer in Utah is consistently caused by faceting, except for instances of a new snow/old snow interface (e.g., crusts, facets, or surface hoar) observed in 2019/2020 and 2016/2017.\
+                \n\n- **Hypothesis**: The 2019/2020 and 2016/2017 seasons experienced record-breaking and consistent snowfall throughout.")
+    st.markdown("**Observation**: Salt Lake has the most recorded week layers.\
+                \n\n- **Hypothesis**: Salt Lake sees the most backcountry traffic due to its abundant snowfall and easy access from nearby large populations.")
+    st.markdown("**Observation**: The data contradicts the initial assumption that larger avalanches are more likely to result in burial.\
+                \n\n- **Hypothesis**: There is no strong correlation between avalanche size and the likelihood of full burial.")
+    st.markdown("**Observation**: February 2021 recorded the highest number of avalanches.\
+                \n\n- **Hypothesis**: This was due to record snowfall over a short period on a faceted weak layer.")
