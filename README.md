@@ -2,13 +2,13 @@
 
 ### Overview
 
-The dashboard is a Python-based data analysis project designed to explore and better understand avalanches in Utah, leveraging data from the Utah Avalanche Center (UAC). The primary goal of this project is to enhance my skills in Python and data analysis while gaining deeper insights into Utah's snowpack and avalanche activity.
+This repo is a Python-based data analysis project designed to explore and better understand avalanches in Utah, leveraging data from the Utah Avalanche Center (UAC). The primary goal of this project is to enhance my Python and data analysis skills while gaining deeper insights into Utah's snowpack and avalanche activity.
 
-This project serves as a learning tool and is a work in progress. I plan to maintain and expand it over time, refining the analysis and adding new features as I continue to develop my technical and analytical skills.
+This project is a learning tool and will be a continuous work in progress. I plan to maintain and expand it over time, refining the analysis and adding new features as I develop my technical and analytical skills.
 
 ### Data Source
 
-All data is gathered from the Utah Avalanche Center (UAC). The UAC tracks all backcountry observations of Utah's snowpack and avalanches on its website: [Utah Avalanche Center Observations](https://utahavalanchecenter.org/observations).
+All data is gathered from the Utah Avalanche Center (UAC). The UAC tracks all backcountry observations of Utah's snowpack and avalanches on its website: [Utah Avalanche Center Observations](https://utahavalanchecenter.org/observations). Data is currently a csv extract as of December 2024. Scheduling a selenium web driver is next in line for automation. 
 
 ### Educational Purpose
 
@@ -33,15 +33,11 @@ This dashboard was created strictly for educational purposes. It allows me to be
 
 ### Future Plans
 
-This project is ongoing, and I plan to:
-
 - Continue refining the data analysis and visualizations.
 - Prove or disprove my hypothesis.
-- Automate the data input (e.g., web scrapping)
+- Automate the data intake (e.g., web scrapping, Selenium web driver)
 - Explore additional datasets (e.g., weather) and integrate more advanced analytical techniques.
 - Expand the dashboard’s functionality to include predictive modeling and interactive visualizations.
-
-Feel free to explore the repository and provide feedback or suggestions for improvement. Thank you for your interest!
 
 ![image](https://github.com/user-attachments/assets/56f67ba0-c5df-4247-a169-cba024b03b5e)
 
