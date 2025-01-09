@@ -112,6 +112,7 @@ with col_metric_4:
 col_graph_1, col_graph_2, col_graph_3 = st.columns(3, gap='small', vertical_alignment='center')
 
 with col_graph_1:
+    st.markdown('####')
     # 1st chart
     st.markdown('##### Avalanches by Aspect & Elevation Rose')
 
@@ -226,6 +227,7 @@ with col_graph_1:
     st.pyplot(fig)
 
 with col_graph_2:
+    st.markdown('###')
     # 2nd Chart
     st.markdown('##### Weak Layer Distribution')
     weak_layer = df.copy()
@@ -249,6 +251,7 @@ with col_graph_2:
     st.altair_chart(weak_layer_chart, use_container_width=True,)
 
 with col_graph_3:
+    st.markdown('###')
     st.markdown('##### Average Size of Human Triggered Avalanches')
 
     # % of people caught in avalanches by size (Caught, Carried, Burried, Killed groups)
@@ -320,10 +323,7 @@ with col_graph_3:
     )
     st.altair_chart(outcome_chart, use_container_width=True)
 
-col_graph_4, col_comments_5 = st.columns(2, gap='small', vertical_alignment='center')
-
-with col_graph_4:
-    st.markdown('#####')
+with st.container():
     st.markdown('##### Avalanches by Month (all seasons)')
 
     all_avys = df.copy()
@@ -368,15 +368,14 @@ with col_graph_4:
                       )
                       .interactive() # Enables zoom and pan
                       .properties(
-                          width=700,
-                          height=500
+                          height=400
                       )
                     )
     st.altair_chart(all_avys_chart, use_container_width=True)
 
-with col_comments_5:
+with st.container():
     st.markdown('#####')
-    st.markdown("**Observation**: The northeast aspect consistently experiences the highest number of avalanches. \
+    st.markdown("**Observation**: The northeast aspect consistently experiences the highest number of avalanches.  \
                 \n\n- **Hypothesis**: This is due to consistent wind loading, with westerly winds depositing snow on east-facing slopes. \
                 Additionally, being in the Northern Hemisphere, Utah's north-facing slopes receive less sunlight, leading to colder temperatures and increased faceting.")
     st.markdown("**Observation**: The largest weak layer in Utah is consistently caused by faceting, except for instances of a new snow/old snow interface (e.g., crusts, facets, or surface hoar) observed in 2019/2020 and 2016/2017.\
