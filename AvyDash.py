@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go  
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 from matplotlib.cm import ScalarMappable
@@ -55,10 +54,7 @@ seasons = {
     "2006/07": (pd.to_datetime("2006-08-01"), pd.to_datetime("2007-06-01")),
     "2005/06": (pd.to_datetime("2005-08-01"), pd.to_datetime("2006-06-01")),
     "2004/05": (pd.to_datetime("2004-08-01"), pd.to_datetime("2005-06-01")),
-    "2003/04": (pd.to_datetime("2003-08-01"), pd.to_datetime("2004-06-01")),
-    "2002/03": (pd.to_datetime("2002-08-01"), pd.to_datetime("2003-06-01")),
-    "2001/02": (pd.to_datetime("2001-08-01"), pd.to_datetime("2002-06-01")),
-    "2000/01": (pd.to_datetime("2000-08-01"), pd.to_datetime("2001-06-01"))
+    "2003/04": (pd.to_datetime("2003-08-01"), pd.to_datetime("2004-06-01"))
     }
 
 # Creating the season column based on the conditions
@@ -75,6 +71,7 @@ with col_header_2:
     year = st.selectbox('',(seasons.keys()), placeholder='Select a season', label_visibility='collapsed', index=0)
 with col_header_1:
     st.title(f'_{year}_ Utah Avalanch & Snowpack')
+    st.write('[GitHub Repository](https://github.com/christomhyatt/UtahAvalancheAnalysis)')
 
 # High level metrics 
 col_metric_1, col_metric_2, col_metric_3, col_metric_4 = st.columns(4, gap='small', vertical_alignment='center')
