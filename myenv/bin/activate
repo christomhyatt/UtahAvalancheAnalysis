@@ -37,7 +37,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="/Users/chrishyatt/Library/Mobile Documents/com~apple~CloudDocs/Projects/gh_repos/AvyDash/myenv"
+VIRTUAL_ENV="/Users/chrishyatt/Library/Mobile Documents/com~apple~CloudDocs/Projects/gh_repos/UtahAvalancheAnalysis/myenv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
