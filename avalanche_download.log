@@ -6,3 +6,43 @@
 2025-01-09 14:35:15,620 - INFO - Starting avalanche data scheduler...
 2025-01-09 14:36:03,283 - INFO - Starting avalanche data scheduler...
 2025-01-09 14:36:03,284 - INFO - Scheduler started. Will download every 2 weeks.
+2025-02-18 13:49:37,846 - INFO - Starting scheduled download...
+2025-02-18 13:49:37,848 - INFO - Created backup: backups/avalanches_20250218_134937.csv
+2025-02-18 13:49:39,475 - ERROR - Error during scheduled download: Message: session not created: This version of ChromeDriver only supports Chrome version 131
+Current browser version is 133.0.6943.98 with binary path /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+Stacktrace:
+0   chromedriver                        0x0000000104822138 cxxbridge1$str$ptr + 3653888
+1   chromedriver                        0x000000010481a988 cxxbridge1$str$ptr + 3623248
+2   chromedriver                        0x0000000104280968 cxxbridge1$string$len + 89228
+3   chromedriver                        0x00000001042b66f8 cxxbridge1$string$len + 309788
+4   chromedriver                        0x00000001042b58a8 cxxbridge1$string$len + 306124
+5   chromedriver                        0x00000001042b119c cxxbridge1$string$len + 287936
+6   chromedriver                        0x00000001042ad828 cxxbridge1$string$len + 273228
+7   chromedriver                        0x00000001042ee064 cxxbridge1$string$len + 537480
+8   chromedriver                        0x00000001042ed9ac cxxbridge1$string$len + 535760
+9   chromedriver                        0x00000001042b9564 cxxbridge1$string$len + 321672
+10  chromedriver                        0x00000001042ba1b4 cxxbridge1$string$len + 324824
+11  chromedriver                        0x00000001047ecfc0 cxxbridge1$str$ptr + 3436424
+12  chromedriver                        0x00000001047f02dc cxxbridge1$str$ptr + 3449508
+13  chromedriver                        0x00000001047d3e60 cxxbridge1$str$ptr + 3333672
+14  chromedriver                        0x00000001047f0b9c cxxbridge1$str$ptr + 3451748
+15  chromedriver                        0x00000001047c5678 cxxbridge1$str$ptr + 3274304
+16  chromedriver                        0x000000010480b2b4 cxxbridge1$str$ptr + 3560060
+17  chromedriver                        0x000000010480b430 cxxbridge1$str$ptr + 3560440
+18  chromedriver                        0x000000010481a5fc cxxbridge1$str$ptr + 3622340
+19  libsystem_pthread.dylib             0x000000018bd5c2e4 _pthread_start + 136
+20  libsystem_pthread.dylib             0x000000018bd570fc thread_start + 8
+
+2025-02-18 13:54:35,816 - INFO - Starting scheduled download...
+2025-02-18 13:54:35,816 - INFO - ====== WebDriver manager ======
+2025-02-18 13:54:40,187 - INFO - Get LATEST chromedriver version for google-chrome
+2025-02-18 13:54:40,314 - INFO - Get LATEST chromedriver version for google-chrome
+2025-02-18 13:54:40,390 - INFO - There is no [mac64] chromedriver "133.0.6943.98" for browser google-chrome "133.0.6943" in cache
+2025-02-18 13:54:40,396 - INFO - Get LATEST chromedriver version for google-chrome
+2025-02-18 13:54:40,613 - INFO - WebDriver version 133.0.6943.98 selected
+2025-02-18 13:54:40,616 - INFO - Modern chrome version https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.98/mac-arm64/chromedriver-mac-arm64.zip
+2025-02-18 13:54:40,616 - INFO - About to download new driver from https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.98/mac-arm64/chromedriver-mac-arm64.zip
+2025-02-18 13:54:40,754 - INFO - Driver downloading response is 200
+2025-02-18 13:54:41,567 - INFO - Get LATEST chromedriver version for google-chrome
+2025-02-18 13:54:41,730 - INFO - Driver has been saved in cache [/Users/chrishyatt/.wdm/drivers/chromedriver/mac64/133.0.6943.98]
+2025-02-18 13:56:17,609 - INFO - Scheduled download completed successfully

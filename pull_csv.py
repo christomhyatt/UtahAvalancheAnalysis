@@ -6,6 +6,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
 import requests
 import time
 import os
@@ -31,9 +32,8 @@ def setup_chrome_driver():
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--disable-dev-shm-usage')
     
-    driver_path = "/Users/chrishyatt/Desktop/chromedriver-mac-arm64/chromedriver"
-    service = Service(driver_path)
-    
+    service = Service(ChromeDriverManager().install())
+
     return webdriver.Chrome(service=service, options=chrome_options)
 
 def wait_for_export_completion(driver, timeout=300):
@@ -202,6 +202,9 @@ def run_scheduler():
             time.sleep(300)  # Wait 5 minutes before retrying if there's an error
 
 if __name__ == "__main__":    
-    # Comment out the following lines during testing
-    logging.info("Starting avalanche data scheduler...")
-    run_scheduler()
+    # Test or Manually update date; comment out when done
+    scheduled_download()
+    
+    # Comment out during testing
+    # logging.info("Starting avalanche data scheduler...")
+    # run_scheduler()

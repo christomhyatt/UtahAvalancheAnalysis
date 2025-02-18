@@ -15,7 +15,7 @@ st.set_page_config(
         'About': "All data is gathered from the Utah Avalanch Center (UAC).\
              The UAC tracks all backcountry observations related to Utah's\
              snowpack and avalaches on their website (https://utahavalanchecenter.org/observations).\
-             \n\n***This dashboard was created strictly for educational purposes to better understand Utah's snowpack.***"
+             \n\n***Created strictly for educational purposes to better understand Utah's snowpack.***"
         })
 
 # Pull in data
@@ -48,13 +48,7 @@ seasons = {
     "2012/13": (pd.to_datetime("2012-08-01"), pd.to_datetime("2013-06-01")),
     "2011/12": (pd.to_datetime("2011-08-01"), pd.to_datetime("2012-06-01")),
     "2010/11": (pd.to_datetime("2010-08-01"), pd.to_datetime("2011-06-01")),
-    "2009/10": (pd.to_datetime("2009-08-01"), pd.to_datetime("2010-06-01")),
-    "2008/09": (pd.to_datetime("2008-08-01"), pd.to_datetime("2009-06-01")),
-    "2007/08": (pd.to_datetime("2007-08-01"), pd.to_datetime("2008-06-01")),
-    "2006/07": (pd.to_datetime("2006-08-01"), pd.to_datetime("2007-06-01")),
-    "2005/06": (pd.to_datetime("2005-08-01"), pd.to_datetime("2006-06-01")),
-    "2004/05": (pd.to_datetime("2004-08-01"), pd.to_datetime("2005-06-01")),
-    "2003/04": (pd.to_datetime("2003-08-01"), pd.to_datetime("2004-06-01"))
+    "2009/10": (pd.to_datetime("2009-08-01"), pd.to_datetime("2010-06-01"))
     }
 
 # Creating the season column based on the conditions
@@ -74,28 +68,20 @@ with col_header_1:
     st.write('[GitHub Repository](https://github.com/christomhyatt/UtahAvalancheAnalysis)')
 
 # High level metrics 
-col_metric_1, col_metric_2, col_metric_3, col_metric_4 = st.columns(4, gap='small', vertical_alignment='center')
+col_metric_1, col_metric_2, col_metric_3 = st.columns(3, gap='small', vertical_alignment='center')
 with col_metric_1:
     num_avalanches = df.copy()
     num_avalanches = num_avalanches[['Season', 'Date']]
     num_avalanches = num_avalanches[num_avalanches['Season'] == year]
     num_avalanches = num_avalanches.count()
     st.metric(label="Avalanches", value=num_avalanches.loc['Season'])
+# with col_metric_2:
+#     num_fatalities = df.copy()
+#     num_fatalities = num_fatalities[['Season', 'Killed']]
+#     num_fatalities = num_fatalities[(num_fatalities['Season'] == year) & (num_fatalities['Killed'] >= 1)]
+#     num_fatalities = num_fatalities.sum()
+#     st.metric(label='Fatalities', value=int(num_fatalities.loc['Killed']),)
 with col_metric_2:
-    top_location = df.copy()
-    top_location = top_location[['Season', 'Place']]
-    top_location = top_location[top_location['Season'] == year]
-    top_location = top_location['Place'].value_counts().sort_values(ascending=False)
-    top_location_count = top_location.max()
-    top_location = top_location.idxmax()
-    st.metric(label='Top Location', value=f'{top_location} | {top_location_count}') # Delta from year before!!
-with col_metric_3:
-    num_fatalities = df.copy()
-    num_fatalities = num_fatalities[['Season', 'Killed']]
-    num_fatalities = num_fatalities[(num_fatalities['Season'] == year) & (num_fatalities['Killed'] >= 1)]
-    num_fatalities = num_fatalities.sum()
-    st.metric(label='Fatalities', value=int(num_fatalities.loc['Killed']))
-with col_metric_4:
     top_trigger = df.copy()
     top_trigger = top_trigger[['Season', 'Trigger']]
     top_trigger = top_trigger[top_trigger['Season'] == year]
@@ -103,6 +89,14 @@ with col_metric_4:
     top_trigger_count = top_trigger.max()
     top_trigger = top_trigger.idxmax()
     st.metric(label='Top Trigger', value=f'{top_trigger} | {top_trigger_count}')
+with col_metric_3:
+    top_location = df.copy()
+    top_location = top_location[['Season', 'Place']]
+    top_location = top_location[top_location['Season'] == year]
+    top_location = top_location['Place'].value_counts().sort_values(ascending=False)
+    top_location_count = top_location.max()
+    top_location = top_location.idxmax()
+    st.metric(label='Top Location', value=f'{top_location} | {top_location_count}') 
 
 # Defining dashboards columns for charts
 col_graph_1, col_graph_2, col_graph_3 = st.columns(3, gap='small', vertical_alignment='center')
@@ -329,6 +323,7 @@ with st.container():
 
     # Creat new date column with year removed
     all_avys['Month Num'] = all_avys['Date'].dt.month
+    all_avys['Year Num'] = all_avys['Date'].dt.year
     all_avys = pd.DataFrame(all_avys)
     month_map = {
         1.0: 'Jan',
@@ -345,19 +340,22 @@ with st.container():
         12.0: 'Dec'
     }
     all_avys['Month'] = all_avys['Month Num'].map(month_map)
-    all_avys = all_avys.drop(columns = ['Date', 'Month Num'])
+    # all_avys = all_avys.drop(columns = ['Date', 'Month Num'])
+    all_avys = all_avys.drop(columns = ['Date'])
 
     # Groupby Season and Date with a new count column; reset_index applies column name
     all_avys = all_avys.groupby('Season').value_counts().reset_index()
 
     # Remove Unkown Seasons
     all_avys = all_avys[all_avys['Season'] != 'Unknown']
+    # print(all_avys[all_avys['Season'] == '2009/10'].sort_values(by=['Year Num','Month Num']))
+    all_avys = all_avys.sort_values(by=['Year Num','Month Num'])
 
     # Chart data with altair to make interactive
     all_avys_chart = (alt.Chart(all_avys)
                       .mark_line(point=True)
                       .encode(
-                          x=alt.X('Month:N', title=''),
+                          x=alt.X('Month:N', title='', sort=all_avys[['Year Num','Month Num']]),
                           y=alt.Y('count:Q', title=''),
                           color=alt.Color('Season:N', title='Season'),
                           tooltip=['Month:N', 'Season:N', 'Count:Q']
